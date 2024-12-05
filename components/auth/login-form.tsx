@@ -21,8 +21,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/form-error";
 import { FormSuccess } from "@/components/form-success";
+import { Login } from "@/actions/login";
+import React, { useTransition } from "react";
 
 export const LoginForm = () => {
+    const [error, setError] = React.useState<string | undefined>("");
+    const [success, setSuccess] = React.useState<string | undefined>("");
+    const [isPending, startTransition] = useTransition();
     const form = useForm<z.infer<typeof loginSchema>>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
@@ -32,7 +37,22 @@ export const LoginForm = () => {
     });
 
     const onSubmit = (values: z.infer<typeof loginSchema>) => {
-        console.log(values);
+        setSuccess("");
+        setError("");
+
+        startTransition(() => {
+            Login(values)
+                .then((res) => {
+                    if (res.error) {
+                        setError(res.error);
+                    } else {
+                        setSuccess(res.success);
+                    }
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+        });
     }
     return (
         <CardWrapper 
@@ -56,6 +76,7 @@ export const LoginForm = () => {
                                     <FormControl>
                                         <Input 
                                             {...field}
+                                            disabled={isPending}
                                             placeholder="mukul@example.com"
                                             type="email"
                                             className="text-sm"  
@@ -74,6 +95,7 @@ export const LoginForm = () => {
                                     <FormControl>
                                         <Input 
                                             {...field}
+                                            disabled={isPending}
                                             placeholder="******"
                                             type="password"  
                                             className="text-sm"  
@@ -86,12 +108,13 @@ export const LoginForm = () => {
                         
                     </div>
 
-                    <FormError message={"Invalid email or password"} />
-                    <FormSuccess message={"Success email or password"} />
+                    <FormError message={error ?? ""} />
+                    <FormSuccess message={success ?? ""} />
 
                     <Button
                         type="submit"
                         className="w-full"
+                        disabled={isPending}
                     >
                         Login
                     </Button>
